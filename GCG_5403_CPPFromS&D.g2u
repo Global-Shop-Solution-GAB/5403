@@ -1,0 +1,233 @@
+Program.Sub.ScreenSU.Start
+Gui.FormCPP..Create
+Gui.FormCPP..Caption("Contract Part Pricing")
+Gui.FormCPP..Size(9015,6195)
+Gui.FormCPP..MinX(0)
+Gui.FormCPP..MinY(0)
+Gui.FormCPP..Position(0,0)
+Gui.FormCPP..BackColor(-2147483633)
+Gui.FormCPP..MousePointer(0)
+Gui.FormCPP..Event(UnLoad,FormCPP_UnLoad)
+Gui.FormCPP.GsGridControl1.Create(GsGridControl)
+Gui.FormCPP.GsGridControl1.Size(8895,5865)
+Gui.FormCPP.GsGridControl1.Position(0,-15)
+Gui.FormCPP.GsGridControl1.Anchor(15)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+V.Local.sError.Declare(String)
+F.Intrinsic.Control.Try
+
+'GCG_5403_CPPFromS&D.g2u
+'Trey S
+'01/09/2019
+'For GWS Tool Group
+'This project will open contract part pricing from the script 1 button on the supply and demand screen
+
+'S&D populate hook - 14045
+'S&D part id - 000003
+'S&D part loc id - 000004
+'S&D rev id - 000099
+'S&D Script 1 id - 000252
+'S&D script 1 hook - 14070
+'Contract Part Pricing Menu ID - 166
+'Contract Part Pricing Populate Hook - 45310
+'CPP Part ID - 000001
+'CPP REV ID - 000015
+'CPP part loc id - 000016
+
+V.Local.sPart.Declare(String)
+V.Local.sLoc.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sParams.Declare(String)
+V.Local.sRev.Declare(String)
+V.Local.sUsesRev.Declare(String)
+V.Local.iRet.Declare(Long)
+V.Local.sFullPart.Declare(String)
+
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+	F.Intrinsic.Control.Case(14045)
+		V.Passed.000252.Set("Contract Part")
+		V.Passed.000253.Set("CPP Edit")
+		
+	F.Intrinsic.Control.Case(14070)
+		V.Local.sPart.Set(V.Passed.000003.Trim)
+		V.Local.sLoc.Set(V.Passed.000004.Trim)
+		V.Local.sRev.Set(V.Passed.000099.Trim)
+		
+		F.Intrinsic.Control.If(V.Local.sPart, =, "")
+			F.Intrinsic.UI.Msgbox("No Part Entered")
+			F.Intrinsic.Control.End
+		F.Intrinsic.Control.EndIf
+		
+		'check part exists
+		F.Intrinsic.String.GSSPartString(V.Local.sPart, V.Local.sRev, V.Local.sFullPart)
+		F.Intrinsic.String.Build("select PART from V_INVENTORY_MSTR where PART = '{0}' and LOCATION = '{1}'", V.Local.sFullPart, V.Local.sLoc, V.Local.sSQL)
+		F.ODBC.Connection!Con.OpenCompanyConnection
+		F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+		F.ODBC.Connection!Con.Close
+		
+		F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+			'F.Intrinsic.String.Build("delete from GCG_5403_PART where TERMINAL = '{0}'", V.Caller.Terminal, V.Local.sSQL)
+			'F.ODBC.Connection!Con.Execute(V.Local.sSQL)
+'			F.Intrinsic.String.Build("insert into GCG_5403_PART (Part, Loc, Terminal, Rev) values ('{0}', '{1}', '{2}', '{3}')", V.Local.sPart, V.Local.sLoc, V.Caller.Terminal, V.Local.sRev, V.Local.sSQL)
+'			F.ODBC.Connection!Con.Execute(V.Local.sSQL)
+'			F.ODBC.Connection!Con.Close
+			
+'			F.Intrinsic.Control.If(V.Local.sRev.Trim, =, "")
+'				V.Local.sUsesRev.Set("Y")
+'			F.Intrinsic.Control.Else
+'				V.Local.sUsesRev.Set("N")
+'			F.Intrinsic.Control.EndIf
+'			
+'			F.Intrinsic.String.Build("{0}!*!{1}!*!{2}!*!{3}", V.Local.sFullPart, V.Local.sLoc, "", V.Local.sUsesRev, V.Local.sParams)
+'			
+'			'so this opens a list of all contract part pricing for that part, but they can't edit it
+'			F.Global.General.CallWrapperSync(300050, V.Local.sParams)
+
+			F.Intrinsic.Control.CallSub(LoadData)
+			F.Intrinsic.Control.CallSub(LoadGrid)
+			GUI.FormCPP..Show
+		F.Intrinsic.Control.Else
+			F.Intrinsic.UI.Msgbox("Invalid Part")
+		F.Intrinsic.Control.EndIf
+		
+		F.Intrinsic.Control.Case(14090)
+			
+			V.Local.sPart.Set(V.Passed.000003.Trim)
+			V.Local.sLoc.Set(V.Passed.000004.Trim)
+			V.Local.sRev.Set(V.Passed.000099.Trim)
+			
+			F.Intrinsic.Control.If(V.Local.sPart, =, "")
+				F.Intrinsic.UI.Msgbox("No Part Entered")
+				F.Intrinsic.Control.End
+			F.Intrinsic.Control.EndIf
+			
+			'check part exists
+			F.Intrinsic.String.GSSPartString(V.Local.sPart, V.Local.sRev, V.Local.sFullPart)
+			F.Intrinsic.String.Build("select PART from V_INVENTORY_MSTR where PART = '{0}' and LOCATION = '{1}'", V.Local.sFullPart, V.Local.sLoc, V.Local.sSQL)
+			F.ODBC.Connection!Con.OpenCompanyConnection
+			F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+'			F.ODBC.Connection!Con.Close
+			
+			F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+				F.Intrinsic.String.Build("delete from GCG_5403_PART where TERMINAL = '{0}'", V.Caller.Terminal, V.Local.sSQL)
+				F.ODBC.Connection!Con.Execute(V.Local.sSQL)
+				F.Intrinsic.String.Build("insert into GCG_5403_PART (Part, Loc, Terminal, Rev) values ('{0}', '{1}', '{2}', '{3}')", V.Local.sPart, V.Local.sLoc, V.Caller.Terminal, V.Local.sRev, V.Local.sSQL)
+				F.ODBC.Connection!Con.Execute(V.Local.sSQL)
+				F.ODBC.Connection!Con.Close
+				
+'				F.Intrinsic.Control.If(V.Local.sRev.Trim, =, "")
+'					V.Local.sUsesRev.Set("Y")
+'				F.Intrinsic.Control.Else
+'					V.Local.sUsesRev.Set("N")
+'				F.Intrinsic.Control.EndIf
+'				
+'				F.Intrinsic.String.Build("{0}!*!{1}!*!{2}!*!{3}", V.Local.sFullPart, V.Local.sLoc, "", V.Local.sUsesRev, V.Local.sParams)
+'				
+'				'so this opens a list of all contract part pricing for that part, but they can't edit it
+'				F.Global.General.CallWrapperSync(300050, V.Local.sParams)
+
+				'wheras this opens the actual CPP screen, but they still need to select a customer
+				'Note: There is a callwrapper for CPP, but it opens a weird screen that is not the same as Order Entry > File > Contract Part Pricing...
+				F.Global.General.LaunchMenuTask(166, 0, V.Local.iRet)
+				
+				'Pause execution until the project window is closed
+				F.Intrinsic.String.Build("select * from MENU_PROCESS where PROGRAM = 'ORD205' and SESSION_ID = '{0}' and COMPANY_CODE = '{1}'", V.Caller.Terminal, V.Caller.CompanyCode, V.Local.sSQL)
+				F.ODBC.Connection!Comm.OpenCommonConnection
+				F.Intrinsic.Control.Do
+					F.ODBC.Connection!Comm.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+					F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF)
+						F.Intrinsic.Control.ExitDo
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.Loop
+				F.ODBC.Connection!Comm.Close
+			F.Intrinsic.Control.Else
+				F.Intrinsic.UI.Msgbox("Invalid Part")
+			F.Intrinsic.Control.EndIf
+		
+	F.Intrinsic.Control.Case(45310)
+		
+		F.ODBC.Connection!Con.OpenCompanyConnection
+		F.Intrinsic.String.Build("select PART, REV, LOC from GCG_5403_PART where TERMINAL = '{0}'", V.Caller.Terminal, V.Local.sSQL)
+		F.ODBC.Connection!Con.ExecuteAndReturn(V.Local.sSQL, V.Local.sRet)
+		F.Intrinsic.Control.If(V.Ambient.ExecuteAndReturnEOF.Not)
+			F.Intrinsic.String.Split(V.Local.sRet, "*!*", V.Local.sRet)
+			V.Passed.000001.Set(V.Local.sRet(0).Trim)
+			V.Passed.000015.Set(V.Local.sRet(1).Trim)
+			V.Passed.000016.Set(V.Local.sRet(2).Trim)
+			F.Intrinsic.String.Build("delete from GCG_5403_PART where TERMINAL = '{0}'", V.Caller.Terminal, V.Local.sSQL)
+			F.ODBC.Connection!Con.Execute(V.Local.sSQL)
+			
+		F.Intrinsic.Control.EndIf
+		F.ODBC.Connection!Con.Close
+	
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Control.Catch
+    F.Intrinsic.String.Build("Project: {0}{1}{1}Subroutine: {2}{1}Error Occurred {3} with description {4}{1}{1}GAB Version: {5}",V.Ambient.ScriptPath,V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Ambient.GABVersion,V.Local.sError)
+    F.Intrinsic.UI.Msgbox(V.Local.sError)
+    F.Intrinsic.Control.End
+F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.LoadData.Start
+V.Local.sSQL.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sLoc.Declare(String)
+V.Local.sRev.Declare(String)
+V.Local.sFullPart.Declare(String)
+
+V.Local.sPart.Set(V.Passed.000003.Trim)
+V.Local.sLoc.Set(V.Passed.000004.Trim)
+V.Local.sRev.Set(V.Passed.000099.Trim)
+
+F.Intrinsic.String.GSSPartString(V.Local.sPart, V.Local.sRev, V.Local.sFullPart)
+F.Intrinsic.String.Build("select RTRIM(CUSTOMER) as Customer, RTRIM(PART) as Part, RTRIM(LOCATION) as Location, Price from V_OE_C_PART_PRICE where PART = '{0}' and LOCATION = '{1}'", V.Local.sFullPart, V.Local.sLoc, V.Local.sSQL)
+F.ODBC.Connection!Con.OpenCompanyConnection
+F.Data.DataTable.CreateFromSQL("dtCPP", "Con", V.Local.sSQL, True)
+F.Data.Dictionary.CreateFromSQL("dictCustomers", "Con", "select RTRIM(CUSTOMER) as CUSTOMER, RTRIM(NAME_CUSTOMER) as NAME from V_CUSTOMER_MASTER")
+F.ODBC.Connection!Con.Close
+F.Data.DataTable.FillFromDictionary("dtCPP", "dictCustomers", "Customer")
+F.Data.Dictionary.Close("dictCustomers")
+
+F.Data.DataTable.SetValueFormat("dtCPP", -1, "Price", "Price", "#########0.00####")
+
+F.Intrinsic.Control.If(V.DataTable.dtCPP.RowCount, =, 0)
+	F.Intrinsic.UI.Msgbox("No Contract Part Pricing found")
+	F.Intrinsic.Control.End
+F.Intrinsic.Control.EndIf
+Program.Sub.LoadData.End
+
+Program.Sub.LoadGrid.Start
+GUI.FormCPP.GsGridControl1.AddGridviewFromDatatable("gvCPP", "dtCPP")
+
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Customer", "HeaderFontBold", True)
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Part", "HeaderFontBold", True)
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Location", "HeaderFontBold", True)
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Price", "HeaderFontBold", True)
+
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Customer", "ReadOnly", True)
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Part", "ReadOnly", True)
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Location", "ReadOnly", True)
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Price", "ReadOnly", True)
+
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Customer", "HeaderHAlignment", "Center")
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Part", "HeaderHAlignment", "Center")
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Location", "HeaderHAlignment", "Center")
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Price", "HeaderHAlignment", "Center")
+
+GUI.FormCPP.GsGridControl1.SetColumnProperty("gvCPP", "Customer", "MinWidth", 100)
+
+GUI.FormCPP.GsGridControl1.SetGridviewProperty("gvCPP", "EnableAppearanceOddRow", "True")
+
+GUI.FormCPP.GsGridControl1.MainView("gvCPP")
+Program.Sub.LoadGrid.End
+
+Program.Sub.FormCPP_UnLoad.Start
+F.Intrinsic.Control.End
+Program.Sub.FormCPP_UnLoad.End
